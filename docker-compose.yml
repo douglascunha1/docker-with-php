@@ -1,0 +1,9 @@
+services:
+  web: # Serviço(Container para o nginx)
+    image: nginx:latest # Imagem a ser usada
+    ports: # Porta a ser usada(host:container)
+      - "80:80"
+
+  app:
+    build:
+      dockerfile: ./php/Dockerfile
