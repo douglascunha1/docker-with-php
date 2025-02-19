@@ -10,6 +10,7 @@ services:
   app:
     build:
       dockerfile: ./php/Dockerfile
+      target: app # Usa a imagem do app
     volumes: # Cria o volume mapeado do host:container
       - /var/www/html/vendor # Protege o diretório vendor para que o comando logo abaixo que não haja sobrescrita
       - ./app:/var/www/html

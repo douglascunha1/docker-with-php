@@ -11,8 +11,10 @@ services:
   app:
     build:
       dockerfile: ./php/Dockerfile
+      target: app_dev # Seta qual imagem usar
     volumes: # Cria o volume mapeado do host:container
       - ./app:/var/www/html
+      - ./php/conf.d/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini:ro # Mapeia o volume do host para o container. ro = read only
     environment:
         MYSQL_HOST: db # Mesmo nome que o serviço abaixo
         MYSQL_PORT: ${MYSQL_PORT}
@@ -21,6 +23,9 @@ services:
         MYSQL_USER: ${MYSQL_USER}
         REDIS_HOST: cache # Nome do serviço a ser usado como host
         REDIS_PORT: ${REDIS_PORT}
+        XDEBUG_MODE: "${XDEBUG_MODE:-off}" # Recebe o valor da env ou seta por padrão off, caso nao tenha valor na env
+    extra_hosts:
+      - host.docker.internal:host-gateway # É necessário garantir que o host.docker.internal está correto e definido no linux
 
   # MYSQL
   db:

@@ -547,3 +547,60 @@ para declararmos nossas configurações para desenvolvimento local.
 # Informa ao docker como conectar ao host quando for usado em desenvolvimento
 xdebug.client_host = 'host.docker.internal'
 ```
+
+No arquivo docker-compose.dev.yml adicionamos XDEBUG_MODE e extra_hosts, sendo XDEBUG_MODE um valor que vem da env e caso o valor nao
+esteja presente na env, seta por padrão off. Já o extra_hosts é para mapear o host do container no linux.
+
+```yml
+services:
+  # NGINX
+  web: # Serviço(Container para o nginx)
+    image: nginx:latest # Imagem a ser usada
+    ports: # Porta a ser usada(host:container)
+      - "80:80"
+    volumes: # Permite criar volumes mapeados do host:container
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
+
+  # PHP
+  app:
+    build:
+      dockerfile: ./php/Dockerfile
+      target: app_dev # Seta qual imagem usar
+    volumes: # Cria o volume mapeado do host:container
+      - ./app:/var/www/html
+      - ./php/conf.d/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini:ro # Mapeia o volume do host para o container. ro = read only
+    environment:
+        MYSQL_HOST: db # Mesmo nome que o serviço abaixo
+        MYSQL_PORT: ${MYSQL_PORT}
+        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        MYSQL_DATABASE: ${MYSQL_DATABASE}
+        MYSQL_USER: ${MYSQL_USER}
+        REDIS_HOST: cache # Nome do serviço a ser usado como host
+        REDIS_PORT: ${REDIS_PORT}
+        XDEBUG_MODE: "${XDEBUG_MODE:-off}" # Recebe o valor da env ou seta por padrão off, caso nao tenha valor na env
+    extra_hosts:
+      - host.docker.internal:host-gateway # É necessário garantir que o host.docker.internal está correto e definido no linux
+
+  # MYSQL
+  db:
+    image: mysql:8.4.4
+    volumes: # Deixamos o Docker definir a melhor estratégia de persistência dos dados
+      - mysqldata:/var/lib/mysql
+    ports: # Porta padrão do MySQL (host:container)
+      - "3306:3306"
+    restart: unless-stopped # Reinicia caso algo dê errado ou até o container ser parado
+    environment: # Variáveis de ambiente do MySQL que serão utilizadas quando o container for inicializado
+      MYSQL_ROOT_PASSWORD: rootpassword # Senha do usuário root
+      MYSQL_USER: myuser # Usuário "normal"
+      MYSQL_PASSWORD: userpassword # Senha do usuário "normal"
+      MYSQL_DATABASE: docker-php # Nome do banco a ser usado
+
+  # REDIS
+  cache:
+    image: redis:latest
+
+volumes:
+  mysqldata:
+```
+
+Na .env adicionamos a linha XDEBUG_MODE: debug para permitir o debugar a nossa aplicação localmente.

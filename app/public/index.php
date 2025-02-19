@@ -1,3 +1,4 @@
 <?php
 
-echo "Hello, world!";
+echo xdebug_info();
+

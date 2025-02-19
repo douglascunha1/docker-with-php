@@ -46,8 +46,8 @@ FROM app as app_dev
 ENV XDEBUG_MODE=off
 
 # Copia os arquivos de configuração do xdebug locais para o container
-COPY ./php/conf.d/xdebug.ini $PHP_INI_DIR/conf.d/
+COPY ./php/conf.d/xdebug.ini /usr/local/etc/php/conf.d/xdebug.ini
 
 # Instala o Xdebug
-RUN SET -eux; \
-    install-php-extensions xdebug
+RUN set -eux; \
+	install-php-extensions xdebug
