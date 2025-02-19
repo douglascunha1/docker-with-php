@@ -19,8 +19,6 @@ services:
     image: mysql:8.4.4
     volumes: # Deixamos o Docker definir a melhor estratégia de persistência dos dados
       - mysqldata:/var/lib/mysql
-    ports: # Porta padrão do MySQL (host:container)
-      - "3306:3306"
     restart: unless-stopped # Reinicia caso algo dê errado ou até o container ser parado
     environment: # Variáveis de ambiente do MySQL que serão utilizadas quando o container for inicializado
       MYSQL_ROOT_PASSWORD: rootpassword # Senha do usuário root
