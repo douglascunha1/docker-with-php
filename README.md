@@ -265,3 +265,115 @@ O arquivo composer.json foi configurado da seguinte forma(apenas para demonstra�
   }
 }
 ```
+
+## Usando uma build para desenvolvimento
+
+Para usar uma build de desenvolvimento(docker compose), basta criar um arquivo chamado docker-compose.dev.yml
+
+Abaixo temos o arquivo docker-compose.yml que é usado para "produção" por exemplo. Note que no serviço do nginx, foi criado um
+novo Dockerfile para personalizar a imagem conforme necessário.
+
+```yml
+services:
+  # NGINX
+  web: # Serviço(Container para o nginx)
+    build:
+      dockerfile: ./nginx/Dockerfile
+    ports: # Porta a ser usada(host:container)
+      - "80:80"
+
+  # PHP
+  app:
+    build:
+      dockerfile: ./php/Dockerfile
+    volumes: # Cria o volume mapeado do host:container
+      - /var/www/html/vendor # Protege o diretório vendor para que o comando logo abaixo que não haja sobrescrita
+      - ./app:/var/www/html
+
+  # MYSQL
+  db:
+    image: mysql:8.4.4
+    volumes: # Deixamos o Docker definir a melhor estratégia de persistência dos dados
+      - mysqldata:/var/lib/mysql
+    ports: # Porta padrão do MySQL (host:container)
+      - "3306:3306"
+    restart: unless-stopped # Reinicia caso algo dê errado ou até o container ser parado
+    environment: # Variáveis de ambiente do MySQL que serão utilizadas quando o container for inicializado
+      MYSQL_ROOT_PASSWORD: rootpassword # Senha do usuário root
+      MYSQL_USER: myuser # Usuário "normal"
+      MYSQL_PASSWORD: userpassword # Senha do usuário "normal"
+      MYSQL_DATABASE: docker-php # Nome do banco a ser usado
+
+volumes:
+  mysqldata:
+```
+
+Dockerfile do nginx
+
+```dockerfile
+FROM nginx:latest
+
+# Copia as configurações do host para o container
+COPY ./nginx/conf.d/default.conf /etc/nginx/conf.d/default.conf
+
+# Copia os arquivos do host para o container
+COPY ./app/public /var/www/html/public
+```
+
+Arquivo docker-compose.dev.yml para desenvolvimento local
+
+```yml
+services:
+  # NGINX
+  web: # Serviço(Container para o nginx)
+    image: nginx:latest # Imagem a ser usada
+    ports: # Porta a ser usada(host:container)
+      - "80:80"
+    volumes: # Permite criar volumes mapeados do host:container
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
+
+  # PHP
+  app:
+    build:
+      dockerfile: ./php/Dockerfile
+
+  # MYSQL
+  db:
+    image: mysql:8.4.4
+    volumes: # Deixamos o Docker definir a melhor estratégia de persistência dos dados
+      - mysqldata:/var/lib/mysql
+    restart: unless-stopped # Reinicia caso algo dê errado ou até o container ser parado
+    environment: # Variáveis de ambiente do MySQL que serão utilizadas quando o container for inicializado
+      MYSQL_ROOT_PASSWORD: rootpassword # Senha do usuário root
+      MYSQL_USER: myuser # Usuário "normal"
+      MYSQL_PASSWORD: userpassword # Senha do usuário "normal"
+      MYSQL_DATABASE: docker-php # Nome do banco a ser usado
+
+volumes:
+  mysqldata:
+```
+
+Para buildar e subir os containers do docker compose para desenvolvimento local, basta usar o comando abaixo:
+
+```bash
+docker compose -f docker-compose.dev.yml up -d --build
+```
+
+Dessa forma é possível ter o ambiente de desenvolvimento configurado adequadamente.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
