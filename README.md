@@ -30,6 +30,47 @@ services: # Container
 
 ```
 
+## Configurando o arquivo default.conf
+
+Para criar configurações personalizadas para o NGINX, criamos um diretório chamado nginx na raiz do projeto e dentro do diretório
+criamos outro diretório chamado conf.d, que conterá um arquivo chamado default.conf.
+
+```nginx configuration
+server {
+    listen 80; # Ouve na porta 80
+    server_name localhost; # Nome do servidor
+    root /app/public; # Path a ser usado por nossa aplicação(requisições irão para esse path)
+    index index.php; # Arquivo de entrada
+
+    # location = Define regras para URL's específicas
+    # ~ = Indica que iremos usar regex
+    # \.php$ = Captura qualquer URL que termine com um .php
+    location ~ \.php$ {
+        # Encaminha requisições PHP para o container app na porta 9000(Padrão do PHP-FPM) e app é o nome do serviço definido no docker-compose
+        fastcgi_pass app:9000;
+        # Define o arquivo index padrão para requisições PHP e é usado quando a URL termina em /
+        fastcgi_index index.php;
+        # Passa o método HTTP (GET, POST, etc) para o PHP. $request_method é uma variável do Nginx
+        fastcgi_param REQUEST_METHOD $request_method;
+        # Define o caminho completo do script PHP a ser executado. $document_root é o valor definido em root. $fastcgi_script_name é o nome do arquivo PHP requisitado
+        fastcgi_param SCRIPT_FILENAME $document_root$fastcgi_script_name;
+        # Inclui arquivo com parâmetros FastCGI padrão. Contém configurações comuns necessárias para PHP
+        include fastcgi_params;
+    }
+
+    # Define regras para todas as outras URLs.
+    # Captura requisições que não correspondem a outros blocos location.
+    location / {
+        # Tenta encontrar arquivos nesta ordem:
+            # 1. $uri: Tenta encontrar o arquivo exato solicitado
+            # 2. $uri/: Tenta encontrar como diretório
+            # 3. /index.php?$query_string: Se nada for encontrado, redireciona para index.php
+        # $query_string mantém parâmetros GET da URL original
+        try_files $uri $uri/ /index.php?$query_string;
+    }
+}
+```
+
 ## Volume Mounting
 
 Volumes é uma forma de persistir e compartilhar dados entre containers e entre container e host. O foco principal de uso deles são:

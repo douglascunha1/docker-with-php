@@ -9,3 +9,5 @@ services:
   app:
     build:
       dockerfile: ./php/Dockerfile
+    volumes: # Cria o volume mapeado do host:container
+      - ./app:/app
