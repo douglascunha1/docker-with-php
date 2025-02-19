@@ -19,6 +19,8 @@ services:
         MYSQL_PASSWORD: ${MYSQL_PASSWORD}
         MYSQL_DATABASE: ${MYSQL_DATABASE}
         MYSQL_USER: ${MYSQL_USER}
+        REDIS_HOST: cache # Nome do serviço a ser usado como host
+        REDIS_PORT: ${REDIS_PORT}
 
   # MYSQL
   db:
@@ -33,6 +35,10 @@ services:
       MYSQL_USER: myuser # Usuário "normal"
       MYSQL_PASSWORD: userpassword # Senha do usuário "normal"
       MYSQL_DATABASE: docker-php # Nome do banco a ser usado
+
+  # REDIS
+  cache:
+    image: redis:latest
 
 volumes:
   mysqldata:
