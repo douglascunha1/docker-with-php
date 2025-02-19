@@ -361,13 +361,61 @@ docker compose -f docker-compose.dev.yml up -d --build
 
 Dessa forma é possível ter o ambiente de desenvolvimento configurado adequadamente.
 
+## Variáveis de ambiente
 
+Para utilizar variáveis de ambiente, basta criar um arquivo .env na raiz do projeto, em seguida, usar a notação ${} no 
+docker-compose.dev.yml para pegar os valores de cada chave no arquivo .env, como visto abaixo:
 
+```dotenv
+MYSQL_PORT: 3306
+MYSQL_PASSWORD: userpassword
+MYSQL_DATABASE: docker-php
+MYSQL_USER: myuser
+```
 
+Uma observação importante aqui, estamos configurando as variáveis de ambiente para o PHP utilizar o MySQL, ou seja, o serviço
+a ser alterado é o app. No caso do MYSQL_HOST, usamos db que é o nome do serviço do mysql.
 
+```yml
+services:
+  # NGINX
+  web: # Serviço(Container para o nginx)
+    image: nginx:latest # Imagem a ser usada
+    ports: # Porta a ser usada(host:container)
+      - "80:80"
+    volumes: # Permite criar volumes mapeados do host:container
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
 
+  # PHP
+  app:
+    build:
+      dockerfile: ./php/Dockerfile
+    volumes: # Cria o volume mapeado do host:container
+      - ./app:/var/www/html
+    environment:
+        MYSQL_HOST: db # Mesmo nome que o serviço abaixo
+        MYSQL_PORT: ${MYSQL_PORT}
+        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        MYSQL_DATABASE: ${MYSQL_DATABASE}
+        MYSQL_USER: ${MYSQL_USER}
 
+  # MYSQL
+  db:
+    image: mysql:8.4.4
+    volumes: # Deixamos o Docker definir a melhor estratégia de persistência dos dados
+      - mysqldata:/var/lib/mysql
+    ports: # Porta padrão do MySQL (host:container)
+      - "3306:3306"
+    restart: unless-stopped # Reinicia caso algo dê errado ou até o container ser parado
+    environment: # Variáveis de ambiente do MySQL que serão utilizadas quando o container for inicializado
+      MYSQL_ROOT_PASSWORD: rootpassword # Senha do usuário root
+      MYSQL_USER: myuser # Usuário "normal"
+      MYSQL_PASSWORD: userpassword # Senha do usuário "normal"
+      MYSQL_DATABASE: docker-php # Nome do banco a ser usado
 
+volumes:
+  mysqldata:
+```
 
 
 

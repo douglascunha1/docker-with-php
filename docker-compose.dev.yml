@@ -11,6 +11,14 @@ services:
   app:
     build:
       dockerfile: ./php/Dockerfile
+    volumes: # Cria o volume mapeado do host:container
+      - ./app:/var/www/html
+    environment:
+        MYSQL_HOST: db # Mesmo nome que o serviço abaixo
+        MYSQL_PORT: ${MYSQL_PORT}
+        MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+        MYSQL_DATABASE: ${MYSQL_DATABASE}
+        MYSQL_USER: ${MYSQL_USER}
 
   # MYSQL
   db:
