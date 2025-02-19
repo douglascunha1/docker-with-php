@@ -12,7 +12,8 @@ services:
     build:
       dockerfile: ./php/Dockerfile
     volumes: # Cria o volume mapeado do host:container
-      - ./app:/app
+      - /var/www/html/vendor # Protege o diretório vendor para que o comando logo abaixo que não haja sobrescrita
+      - ./app:/var/www/html
 
   # MYSQL
   db:

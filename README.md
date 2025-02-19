@@ -152,3 +152,116 @@ services:
 volumes:
   mysqldata:
 ```
+
+## Configurando o Composer do PHP
+
+Para configurar o composer do php, basta configurar o Dockerfile com a imagem do php como descrito logo abaixo:
+
+```dockerfile
+FROM php:8.1-fpm-alpine
+
+# Instala as extensões PDO e PDO_MYSQL para usarmos com o PHP
+RUN docker-php-ext-install pdo pdo_mysql
+
+# Usado para setar o o usuário como super user no container
+ENV COMPOSER_ALLOW_SUPERUSER=1
+
+# Obtendo o composer usando multi-stage build
+# See https://docs.docker.com/build/building/multi-stage/
+# Copia a imagem do composer 2.8.5 para o diretório onde fica os binários do composer e passa para o diretório
+# padrão na nossa imagem
+COPY --from=composer:2.8.5 /usr/bin/composer /usr/bin/composer
+
+
+# Copia os arquivos composer.json e composer.lock após o composer install ser executado
+# A vantagem dessa cópia é que permite o cache do docker, dessa forma o composer install só será executado quando
+# o composer.json e composer.lock soferem alterações
+# See https://medium.com/@softius/faster-docker-builds-with-composer-install-b4d2b15d0fff
+COPY ./app/composer.* ./
+
+# Realiza a instalação das dependências do composer com argumentos para otimizar o processo
+# @See https://getcomposer.org/doc/00-intro.md
+RUN composer install --prefer-dist --no-dev --no-scripts --no-progress --no-interaction
+
+# Copia os arquivos da aplicação para o diretório de trabalho(/var/www/html)
+COPY ./app .
+
+# Executa o autoload do composer otimizado
+RUN composer dump-autoload --optimize
+```
+
+Em seguida, alteramos o docker-file.yml e setamos dois volumes, o primeiro é para evitar sobrescrita do diretório vendor
+o segundo copia os arquivos de app para o diretório do container /var/www/html.
+
+O ideal é ter dois arquivos do docker compose, um para produção e outro para desenvolvimento local.
+
+```yml
+services:
+  # NGINX
+  web: # Serviço(Container para o nginx)
+    image: nginx:latest # Imagem a ser usada
+    ports: # Porta a ser usada(host:container)
+      - "80:80"
+    volumes: # Permite criar volumes mapeados do host:container
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
+
+  # PHP
+  app:
+    build:
+      dockerfile: ./php/Dockerfile
+    volumes: # Cria o volume mapeado do host:container
+      - /var/www/html/vendor # Protege o diretório vendor para que o comando logo abaixo que não haja sobrescrita
+      - ./app:/var/www/html # /var/www/html é o diretório no nosso container
+
+  # MYSQL
+  db:
+    image: mysql:8.4.4
+    volumes: # Deixamos o Docker definir a melhor estratégia de persistência dos dados
+      - mysqldata:/var/lib/mysql
+    ports: # Porta padrão do MySQL (host:container)
+      - "3306:3306"
+    restart: unless-stopped # Reinicia caso algo dê errado ou até o container ser parado
+    environment: # Variáveis de ambiente do MySQL que serão utilizadas quando o container for inicializado
+      MYSQL_ROOT_PASSWORD: rootpassword # Senha do usuário root
+      MYSQL_USER: myuser # Usuário "normal"
+      MYSQL_PASSWORD: userpassword # Senha do usuário "normal"
+      MYSQL_DATABASE: docker-php # Nome do banco a ser usado
+
+volumes:
+  mysqldata:
+```
+
+O arquivo composer.json foi configurado da seguinte forma(apenas para demonstração). O src é um sub-diretório de app.
+
+```json
+{
+  "name": "douglas/app",
+  "description": "Demo app using docker and php",
+  "minimum-stability": "dev",
+  "license": "MIT",
+  "authors": [
+    {
+      "name": "Douglas",
+      "email": "contact.dougcunha@gmail.com"
+    }
+  ],
+  "require": {
+    "php": "^8.0",
+    "ext-pdo": "*",
+    "ext-pdo_mysql": "*",
+    "symfony/cache": "^6.1",
+    "predis/predis": "^2.0"
+  },
+  "require-dev": {
+      "phpunit/phpunit": "^9.5"
+  },
+  "autoload": {
+      "psr-4": {
+          "App\\": "src"
+      }
+  },
+  "scripts": {
+      "run-phpunit": "vendor/bin/phpunit"
+  }
+}
+```
