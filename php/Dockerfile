@@ -1,7 +1,16 @@
-FROM php:8.1-fpm-alpine
+# app = alias
+FROM php:8.1-fpm-alpine as app
+
+# Permite instalar extensões do PHP
+COPY --from=mlocati/php-extension-installer /usr/bin/install-php-extensions /usr/local/bin/
+
+# Instala as extensões do PHP
+# -eux = Sair em caso de erros, sair em variáveis não definidas, imprimir cada comando conforme ele é executado
+RUN set -eux; \
+    install-php-extensions pdo pdo_mysql;
 
 # Instala as extensões PDO e PDO_MYSQL para usarmos com o PHP
-RUN docker-php-ext-install pdo pdo_mysql
+# RUN docker-php-ext-install pdo pdo_mysql
 
 # Usado para setar o o usuário como super user no container
 ENV COMPOSER_ALLOW_SUPERUSER=1
@@ -28,3 +37,17 @@ COPY ./app .
 
 # Executa o autoload do composer otimizado
 RUN composer dump-autoload --optimize
+
+
+# app_dev é outro alias, basicamente estamos contruindo uma imagem(app_dev) em cima de outra(app)
+FROM app as app_dev
+
+# Seta o modo do xdebug para off
+ENV XDEBUG_MODE=off
+
+# Copia os arquivos de configuração do xdebug locais para o container
+COPY ./php/conf.d/xdebug.ini $PHP_INI_DIR/conf.d/
+
+# Instala o Xdebug
+RUN SET -eux; \
+    install-php-extensions xdebug
