@@ -3,6 +3,8 @@ services:
     image: nginx:latest # Imagem a ser usada
     ports: # Porta a ser usada(host:container)
       - "80:80"
+    volumes: # Permite criar volumes mapeados do host:container
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
 
   app:
     build:
