@@ -11,7 +11,7 @@ services:
   app:
     build:
       dockerfile: ./php/Dockerfile
-      target: app_dev # Seta qual imagem usar
+      target: "${BUILD_TARGET:-app}"# Seta qual imagem usar baseado na env ou no padrao(app)
     volumes: # Cria o volume mapeado do host:container
       - ./app:/var/www/html
       - ./php/conf.d/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini:ro # Mapeia o volume do host para o container. ro = read only

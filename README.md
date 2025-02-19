@@ -565,7 +565,7 @@ services:
   app:
     build:
       dockerfile: ./php/Dockerfile
-      target: app_dev # Seta qual imagem usar
+      target: app # Seta qual imagem usar
     volumes: # Cria o volume mapeado do host:container
       - ./app:/var/www/html
       - ./php/conf.d/xdebug.ini:/usr/local/etc/php/conf.d/xdebug.ini:ro # Mapeia o volume do host para o container. ro = read only
@@ -604,3 +604,9 @@ volumes:
 ```
 
 Na .env adicionamos a linha XDEBUG_MODE: debug para permitir o debugar a nossa aplicação localmente.
+
+Outra forma de setar manualmente(docker-compose.dev.yml) o target seria criando uma env.local passando a chave BUILD_TARGET com o valor app_dev
+
+```
+target: "${BUILD_TARGET:-app}"# Seta qual imagem usar baseado na env ou no padrao(app)
+```
