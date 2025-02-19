@@ -109,3 +109,46 @@ Volumes é uma forma de persistir e compartilhar dados entre containers e entre 
       mysql_data: # Volume nomeado
         driver: local # Driver do volume
     ```
+   
+## Adicionando o MySQL no nosso Docker Compose
+
+Para adicionar o MySQL no nosso arquivo docker-compose.yml, basta adicionar um novo serviço, nesse caso dei o nome de db
+que contém a imagem do mysql na versão 8.4.4, um volume para persistência dos dados onde o docker irá definir uma estratégia
+apropriada para isso, a porta padrão do mysql mapeada do host para o container, restart sempre que algum problema acontecer(a menos
+que o container seja parado manualmente), e variáveis de ambiente que serão executadas assim que o container subir. Por fim, adicionamos
+um volume fora do services, onde definimos o seu nome como sendo mysqldata e o docker irá utilizar alguma estratégia apropriada.
+
+```yml
+services:
+  # NGINX
+  web: # Serviço(Container para o nginx)
+    image: nginx:latest # Imagem a ser usada
+    ports: # Porta a ser usada(host:container)
+      - "80:80"
+    volumes: # Permite criar volumes mapeados do host:container
+      - ./nginx/conf.d/default.conf:/etc/nginx/conf.d/default.conf
+
+  # PHP
+  app:
+    build:
+      dockerfile: ./php/Dockerfile
+    volumes: # Cria o volume mapeado do host:container
+      - ./app:/app
+
+  # MYSQL
+  db:
+    image: mysql:8.4.4
+    volumes: # Deixamos o Docker definir a melhor estratégia de persistência dos dados
+      - mysqldata:/var/lib/mysql
+    ports: # Porta padrão do MySQL (host:container)
+      - "3306:3306"
+    restart: unless-stopped # Reinicia caso algo dê errado ou até o container ser parado
+    environment: # Variáveis de ambiente do MySQL que serão utilizadas quando o container for inicializado
+      MYSQL_ROOT_PASSWORD: rootpassword # Senha do usuário root
+      MYSQL_USER: myuser # Usuário "normal"
+      MYSQL_PASSWORD: userpassword # Senha do usuário "normal"
+      MYSQL_DATABASE: docker-php # Nome do banco a ser usado
+
+volumes:
+  mysqldata:
+```
